@@ -1,4 +1,3 @@
-
 pluginManagement {
     // Include 'plugins build' to define convention plugins.
     includeBuild("build-logic")
@@ -61,12 +60,18 @@ dependencyResolutionManagement {
             library("h2", "com.h2database:h2:1.4.200")
 
             //  JUnit
-            library("junit-platform-launcher", "org.junit.platform:junit-platform-launcher:1.10.2")
+            library(
+                "junit-platform-launcher", "org.junit.platform", "junit-platform-launcher"
+            ).version(providers.gradleProperty("junit-platform-launcher.version").get())
 
-            library("junit-jupiter-engine", "org.junit.jupiter:junit-jupiter-engine:5.10.2")
+            library(
+                "junit-jupiter-engine", "org.junit.jupiter", "junit-jupiter-engine"
+            ).version(providers.gradleProperty("junit-jupiter-engine.version").get())
 
             // Logback
-            library("logback-classic", "ch.qos.logback:logback-classic:1.2.12")
+            library(
+                "logback-classic", "ch.qos.logback", "logback-classic"
+            ).version(providers.gradleProperty("logback.version").get())
 
         }
     }
