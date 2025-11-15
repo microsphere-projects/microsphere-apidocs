@@ -49,7 +49,21 @@ dependencyResolutionManagement {
                 "spring-cloud-dependencies", "org.springframework.cloud", "spring-cloud-dependencies"
             ).version(providers.gradleProperty("spring-cloud.version").get())
 
+            // Apache Dubbo Dependencies (BOM)
+            library(
+                "apache-dubbo-bom","org.apache.dubbo","dubbo-dependencies-bom"
+            ).version(providers.gradleProperty("dubbo.version").get())
+
             // Libraries
+
+            // Springfox
+            library(
+                "springfox-boot-starter", "io.springfox", "springfox-boot-starter"
+            ).version(providers.gradleProperty("springfox.version").get())
+
+            library(
+                "dubbo-spring-boot-starter","org.apache.dubbo","dubbo-spring-boot-starter"
+            ).version(providers.gradleProperty("dubbo.version").get())
 
             // JSR-305
             library(
@@ -83,4 +97,5 @@ dependencyResolutionManagement {
 rootProject.name = "microsphere-apidocs"
 
 include(
+    "microsphere-apidocs-springfox-spring-boot"
 )

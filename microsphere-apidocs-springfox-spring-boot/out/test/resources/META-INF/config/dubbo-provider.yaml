@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: dubbo-test
+dubbo:
+  application:
+    name: dubbo-test
+  registry:
+    address: zookeeper://127.0.0.1:2181
