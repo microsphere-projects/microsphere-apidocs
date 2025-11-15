@@ -52,12 +52,16 @@ dependencyResolutionManagement {
             // Libraries
 
             // JSR-305
-            library("jsr305", "com.google.code.findbugs:jsr305:3.0.2")
+            library(
+                "jsr305", "com.google.code.findbugs", "jsr305"
+            ).version(providers.gradleProperty("jsr305.version").get())
 
             // Testing
 
             // H2
-            library("h2", "com.h2database:h2:1.4.200")
+            library(
+                "h2", "com.h2database", "h2"
+            ).version(providers.gradleProperty("h2.version").get())
 
             //  JUnit
             library(
@@ -72,7 +76,6 @@ dependencyResolutionManagement {
             library(
                 "logback-classic", "ch.qos.logback", "logback-classic"
             ).version(providers.gradleProperty("logback.version").get())
-
         }
     }
 }
