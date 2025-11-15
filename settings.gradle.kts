@@ -55,21 +55,6 @@ dependencyResolutionManagement {
             // JSR-305
             library("jsr305", "com.google.code.findbugs:jsr305:3.0.2")
 
-            // MyBatis
-            library(
-                "mybatis", "org.mybatis", "mybatis"
-            ).version(providers.gradleProperty("mybatis.version").get())
-
-            // MyBatis Spring
-            library(
-                "mybatis-spring", "org.mybatis", "mybatis-spring"
-            ).version(providers.gradleProperty("mybatis-spring.version").get())
-
-            // MyBatis Spring Boot
-            library(
-                "mybatis-spring-boot", "org.mybatis.spring.boot", "mybatis-spring-boot-starter"
-            ).version(providers.gradleProperty("mybatis-spring-boot.version").get())
-
             // Testing
 
             // H2
