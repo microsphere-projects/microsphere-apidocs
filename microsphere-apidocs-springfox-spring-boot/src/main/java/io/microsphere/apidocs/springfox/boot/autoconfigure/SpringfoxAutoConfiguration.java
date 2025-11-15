@@ -74,13 +74,12 @@ public class SpringfoxAutoConfiguration {
 
             @Bean
             @ConditionalOnMissingBean
-            public Docket createDubboRestApi() {// 创建文档生成器
+            public Docket createDubboRestApi() {
                 ApiSelectorBuilder asb = new Docket(SWAGGER_2)
                         .apiInfo(getApiInfo())
                         .select()
                         .apis(withClassAnnotation(DubboDocumentation.class))
                         .paths(PathSelectors.any());
-                // 添加head参数end
                 Docket docket = asb.build();
                 docket.groupName("dubbo");
                 return docket;
