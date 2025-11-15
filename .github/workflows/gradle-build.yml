@@ -1,0 +1,34 @@
+
+name: Gradle Build
+
+on:
+  push:
+    branches: [ "main" , "dev" ]
+  pull_request:
+    branches: [ "main" , "dev" , "release" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '17' , '21' ]
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup JDK ${{ matrix.Java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: 'temurin'
+
+      - name: Build with Gradle
+        run: ./gradlew build test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: microsphere-projects/microsphere-apidocs
