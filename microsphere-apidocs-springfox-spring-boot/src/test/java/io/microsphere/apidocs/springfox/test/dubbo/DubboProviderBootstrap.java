@@ -17,19 +17,23 @@
 
 package io.microsphere.apidocs.springfox.test.dubbo;
 
-import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /**
- * {@link EchoService} Implementation
+ * {@link DubboProviderBootstrap} Test
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
+ * @see DubboProviderBootstrap
  * @since 1.0.0
  */
-@DubboService
-public class EchoServiceImpl implements EchoService {
+@EnableAutoConfiguration
+public class DubboProviderBootstrap {
 
-    @Override
-    public String echo(String message) {
-        return message;
+    public static void main(String[] args) {
+        new SpringApplicationBuilder(DubboProviderBootstrap.class)
+                .profiles("dubbo-provider")
+                .build()
+                .run(args);
     }
 }

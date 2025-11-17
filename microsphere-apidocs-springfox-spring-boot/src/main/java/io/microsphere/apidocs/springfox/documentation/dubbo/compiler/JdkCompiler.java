@@ -1,4 +1,4 @@
-package io.microsphere.apidocs.springfox.documentation.spring.web.compiler;
+package io.microsphere.apidocs.springfox.documentation.dubbo.compiler;
 
 import io.microsphere.logging.Logger;
 import org.apache.dubbo.common.compiler.support.AbstractCompiler;
@@ -36,6 +36,8 @@ import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
 import static io.microsphere.collection.Lists.ofList;
+import static io.microsphere.constants.PathConstants.SLASH_CHAR;
+import static io.microsphere.constants.SymbolConstants.DOT_CHAR;
 import static io.microsphere.logging.LoggerFactory.getLogger;
 import static io.microsphere.reflect.MethodUtils.findMethod;
 import static io.microsphere.util.StringUtils.split;
@@ -178,7 +180,7 @@ public class JdkCompiler extends AbstractCompiler {
                     String sourceCode = entry.getValue();
                     compilationUnits.add(new SourceJavaFileObject(className, sourceCode, charset));
 
-                    File classFile = new File(outputDirectory, className.replace('.', '/').concat(".class"));
+                    File classFile = new File(outputDirectory, className.replace(DOT_CHAR, SLASH_CHAR).concat(".class"));
                     classFiles.put(className, classFile);
                 }
 

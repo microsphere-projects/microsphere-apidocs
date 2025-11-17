@@ -22,13 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.core.annotation.AnnotationAttributes;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.annotation.Annotation;
@@ -43,14 +40,37 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.stream.Stream;
 
+import static io.microsphere.collection.Maps.ofMap;
+import static io.microsphere.constants.PathConstants.SLASH;
+import static io.microsphere.constants.PathConstants.SLASH_CHAR;
+import static io.microsphere.constants.SeparatorConstants.LINE_SEPARATOR;
+import static io.microsphere.constants.SymbolConstants.AT_CHAR;
+import static io.microsphere.constants.SymbolConstants.COMMA_CHAR;
+import static io.microsphere.constants.SymbolConstants.DOLLAR_CHAR;
+import static io.microsphere.constants.SymbolConstants.DOT_CHAR;
+import static io.microsphere.constants.SymbolConstants.DOUBLE_QUOTE_CHAR;
+import static io.microsphere.constants.SymbolConstants.EQUAL_CHAR;
+import static io.microsphere.constants.SymbolConstants.GREATER_THAN_CHAR;
+import static io.microsphere.constants.SymbolConstants.LEFT_CURLY_BRACE_CHAR;
+import static io.microsphere.constants.SymbolConstants.LEFT_PARENTHESIS_CHAR;
+import static io.microsphere.constants.SymbolConstants.LESS_THAN_CHAR;
+import static io.microsphere.constants.SymbolConstants.RIGHT_CURLY_BRACE_CHAR;
+import static io.microsphere.constants.SymbolConstants.RIGHT_PARENTHESIS_CHAR;
+import static io.microsphere.constants.SymbolConstants.SEMICOLON_CHAR;
+import static io.microsphere.constants.SymbolConstants.SPACE;
+import static io.microsphere.constants.SymbolConstants.SPACE_CHAR;
+import static io.microsphere.util.ClassUtils.isSimpleType;
 import static java.beans.Introspector.decapitalize;
-import static java.lang.System.lineSeparator;
+import static java.util.Collections.emptyMap;
+import static java.util.stream.Stream.of;
 import static org.springframework.core.annotation.AnnotatedElementUtils.getMergedAnnotation;
 import static org.springframework.core.annotation.AnnotationUtils.getAnnotationAttributes;
 import static org.springframework.core.annotation.AnnotationUtils.synthesizeAnnotation;
+import static org.springframework.util.ClassUtils.getUserClass;
+import static org.springframework.util.ReflectionUtils.findMethod;
 import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
+import static org.springframework.util.StringUtils.hasText;
 
 /**
  * Abstract Delegating {@link ControllerSourceCodeGenerator} class for {@link RestController}
@@ -58,28 +78,6 @@ import static org.springframework.util.StringUtils.arrayToCommaDelimitedString;
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  */
 public abstract class RestControllerSourceCodeGenerator implements ControllerSourceCodeGenerator {
-
-    protected static final String LINE_SEPARATOR = lineSeparator();
-
-    protected static final String SEPARATOR = ";";
-
-    protected static final String COMMA = ",";
-
-    protected static final String SPACE = " ";
-
-    protected static final String DOT = ".";
-
-    protected static final String START_BODY = "{";
-
-    protected static final String END_BODY = "}";
-
-    protected static final String START_PARAMETER = "(";
-
-    protected static final String END_PARAMETER = ")";
-
-    protected static final String DOUBLE_QUOTE = "\"";
-
-    protected static final String SLASH = "/";
 
     protected static final Class<RequestMapping> REQUEST_MAPPING_CLASS = RequestMapping.class;
 
@@ -90,7 +88,7 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
 
         StringBuilder codeBuilder = new StringBuilder();
 
-        interfaceImplClass = ClassUtils.getUserClass(interfaceImplClass);
+        interfaceImplClass = getUserClass(interfaceImplClass);
 
         // package ...
         generatePackage(codeBuilder, interfaceClass, interfaceImplClass);
@@ -170,14 +168,17 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     protected void generateInjectedField(StringBuilder codeBuilder, Class<?> interfaceClass, Class<?> interfaceImplClass, String injectedBeanName) {
         Annotation injectedAnnotation = getInjectedAnnotation(interfaceClass, interfaceImplClass);
         if (injectedAnnotation != null) {
-            if (StringUtils.hasText(injectedBeanName)) {
+            if (hasText(injectedBeanName)) {
                 generateDeclaredAnnotation(codeBuilder, Qualifier.class, injectedBeanName);
             }
             generateAnnotation(codeBuilder, injectedAnnotation, LINE_SEPARATOR);
 
             String interfaceClassName = getTypeName(interfaceClass);
             String fieldName = getFieldName(interfaceClass);
-            codeBuilder.append("private ").append(interfaceClassName).append(" ").append(fieldName);
+            codeBuilder.append("private").append(SPACE_CHAR)
+                    .append(interfaceClassName)
+                    .append(SPACE_CHAR)
+                    .append(fieldName);
             generateSeparator(codeBuilder);
             generateNewLine(codeBuilder);
         }
@@ -192,7 +193,7 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     protected void generateMethods(StringBuilder codeBuilder, Class<?> interfaceClass, Class<?> interfaceImplClass) {
-        Stream.of(interfaceClass.getMethods()).sorted(this::sort).forEach(method -> {
+        of(interfaceClass.getMethods()).sorted(this::sort).forEach(method -> {
             // generate @RequestMapping
             generateRequestMappingMethod(codeBuilder, method, interfaceClass, interfaceImplClass);
         });
@@ -205,9 +206,58 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     protected final void generateRequestMappingMethod(StringBuilder codeBuilder, Method method, Class<?> interfaceClass,
                                                       Class<?> interfaceImplClass) {
         RequestMapping requestMapping = getMergedAnnotation(method, REQUEST_MAPPING_CLASS);
-        if (requestMapping != null) {
+        if (requestMapping == null) {
+            generateDefaultRequestMappingMethod(codeBuilder, method, interfaceClass, interfaceImplClass);
+        } else {
             generateRequestMappingMethod(codeBuilder, method, requestMapping, interfaceClass, interfaceImplClass);
         }
+    }
+
+    protected Map<String, Object> synthesizeRequestMappingAttributes(Method method, Class<?> interfaceClass) {
+        String interfaceClassName = getTypeName(interfaceClass);
+        String methodName = method.getName();
+
+        String basePath = SLASH_CHAR + interfaceClassName.replace(DOT_CHAR, SLASH_CHAR) + SLASH_CHAR;
+        String path = basePath + methodName;
+
+        return ofMap("value", path);
+    }
+
+    protected void generateDefaultRequestMappingMethod(StringBuilder codeBuilder, Method method, Class<?> interfaceClass, Class<?> interfaceImplClass) {
+        // Synthesize the annotation attributes
+        Map<String, Object> requestMappingAttributes = synthesizeRequestMappingAttributes(method, interfaceClass);
+
+        // annotate @RequestMapping
+        generateAnnotation(codeBuilder, REQUEST_MAPPING_CLASS, requestMappingAttributes);
+
+        // access modifiers
+        generateAccessModifiers(codeBuilder, method);
+
+        // type parameters
+        generateTypeParameters(codeBuilder, method);
+
+        // return type
+        generateReturnType(codeBuilder, method);
+
+        // method name
+        generateMethodName(codeBuilder, method);
+
+        // method parameters
+        generateDefaultMethodParameters(codeBuilder, method, interfaceImplClass);
+
+        // method throws
+        generateMethodThrows(codeBuilder, method);
+
+        // start method body
+        generateStartBody(codeBuilder);
+        generateNewLine(codeBuilder);
+
+        // generate invoke code
+        generateMethodBody(codeBuilder, method, interfaceClass, interfaceImplClass);
+
+        // end method body
+        generateEndBody(codeBuilder);
+        generateNewLine(codeBuilder);
     }
 
     final void generateRequestMappingMethod(StringBuilder codeBuilder, Method method, RequestMapping requestMapping, Class<?> interfaceClass,
@@ -253,21 +303,23 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     final void generateAccessModifiers(StringBuilder codeBuilder, Method method) {
-        codeBuilder.append("public ");
+        codeBuilder.append("public");
+        generateSpace(codeBuilder);
     }
 
     final void generateTypeParameters(StringBuilder codeBuilder, Method method) {
         TypeVariable<?>[] typeParameters = method.getTypeParameters();
         if (typeParameters.length > 0) {
             boolean first = true;
-            codeBuilder.append('<');
+            codeBuilder.append(LESS_THAN_CHAR);
             for (TypeVariable<?> typeParameter : typeParameters) {
                 if (!first)
                     generateComma(codeBuilder);
                 codeBuilder.append(typeParameter.toString());
                 first = false;
             }
-            codeBuilder.append("> ");
+            codeBuilder.append(GREATER_THAN_CHAR);
+            generateSpace(codeBuilder);
         }
     }
 
@@ -287,10 +339,15 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
         generateMethodParameters(codeBuilder, method, overriddenMethod);
     }
 
+    void generateDefaultMethodParameters(StringBuilder codeBuilder, Method method, Class<?> interfaceImplClass) {
+        Method overriddenMethod = getOverriddenMethod(method, interfaceImplClass);
+        generateDefaultMethodParameters(codeBuilder, method, overriddenMethod);
+    }
+
     protected final Method getOverriddenMethod(Method method, Class<?> interfaceImplClass) {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
-        Method overriddenMethod = ReflectionUtils.findMethod(interfaceImplClass, methodName, parameterTypes);
+        Method overriddenMethod = findMethod(interfaceImplClass, methodName, parameterTypes);
         return overriddenMethod;
     }
 
@@ -315,6 +372,28 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
         generateEndParameter(codeBuilder);
     }
 
+    protected final void generateDefaultMethodParameters(StringBuilder codeBuilder, Method method, Method overriddenMethod) {
+        int count = method.getParameterCount();
+        generateStartParameter(codeBuilder);
+        Parameter[] parameters = method.getParameters();
+        Parameter[] overriddenParameters = overriddenMethod.getParameters();
+
+        String[] parameterNames = parameterNameDiscoverer.getParameterNames(overriddenMethod);
+        String[] overriddenParameterNames = parameterNameDiscoverer.getParameterNames(overriddenMethod);
+
+        for (int i = 0; i < count; i++) {
+            Parameter parameter = parameters[i];
+            String parameterName = parameterNames[i];
+            Parameter overriddenParameter = overriddenParameters[i];
+            String overriddenParameterName = overriddenParameterNames[i];
+            generateDefaultParameter(codeBuilder, parameter, parameterName, overriddenParameter, overriddenParameterName);
+            if (i < count - 1) {
+                generateComma(codeBuilder);
+            }
+        }
+        generateEndParameter(codeBuilder);
+    }
+
     final void generateParameter(StringBuilder codeBuilder, Parameter parameter, String parameterName, Parameter overriddenParameter,
                                  String overriddenParameterName) {
         // declare annotations
@@ -327,6 +406,47 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
         generateParameterType(codeBuilder, overriddenParameter.getParameterizedType());
         // parameter type
         generateParameterName(codeBuilder, overriddenParameterName);
+    }
+
+    protected void generateDefaultParameter(StringBuilder codeBuilder, Parameter parameter, String parameterName, Parameter overriddenParameter,
+                                            String overriddenParameterName) {
+        // declare annotations
+        Annotation[] annotations = findAnnotations(parameter, overriddenParameter);
+        for (Annotation annotation : annotations) {
+            generateAnnotation(codeBuilder, annotation, SPACE);
+        }
+
+        Annotation parameterAnnotation = synthesizeParameterAnnotation(parameter, parameterName, overriddenParameter, overriddenParameterName, annotations);
+        generateAnnotation(codeBuilder, parameterAnnotation, SPACE);
+
+        // declare parameter type
+        generateParameterType(codeBuilder, overriddenParameter.getParameterizedType());
+        // parameter type
+        generateParameterName(codeBuilder, overriddenParameterName);
+    }
+
+    protected Annotation synthesizeParameterAnnotation(Parameter parameter, String parameterName, Parameter overriddenParameter,
+                                                       String overriddenParameterName, Annotation[] annotations) {
+        Annotation parameterAnnotation = synthesizeParameterAnnotation(overriddenParameter, overriddenParameterName);
+        if (parameterAnnotation == null) {
+            parameterAnnotation = synthesizeParameterAnnotation(parameter, parameterName);
+        }
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(parameterAnnotation.annotationType())) {
+                return null;
+            }
+        }
+        return parameterAnnotation;
+    }
+
+    protected Annotation synthesizeParameterAnnotation(Parameter parameter, String parameterName) {
+        Class<?> parameterType = parameter.getType();
+        if (isSimpleType(parameterType)) {
+            Map<String, Object> attributes = ofMap("value", parameterName, "defaultValue", "");
+            return synthesizeAnnotation(attributes, RequestParam.class, parameter);
+        } else { // Complex Type
+            return synthesizeAnnotation(emptyMap(), RequestBody.class, parameter);
+        }
     }
 
     private Annotation[] findAnnotations(Parameter parameter, Parameter overriddenParameter) {
@@ -357,7 +477,8 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
         Class<?>[] exceptionTypes = method.getExceptionTypes();
         int length = exceptionTypes.length;
         if (length > 0) {
-            codeBuilder.append("throws ");
+            codeBuilder.append("throws");
+            generateSpace(codeBuilder);
             for (int i = 0; i < length; i++) {
                 Class<?> exceptionType = exceptionTypes[i];
                 generateType(codeBuilder, exceptionType);
@@ -372,7 +493,8 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
         String fieldName = getFieldName(interfaceClass);
         Class<?> returnType = method.getReturnType();
         if (!void.class.equals(returnType)) {
-            codeBuilder.append("return ");
+            codeBuilder.append("return");
+            generateSpace(codeBuilder);
         }
         codeBuilder.append(fieldName);
         generateMethodInvocation(codeBuilder, method, interfaceImplClass);
@@ -440,7 +562,7 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
 
     final void generateAnnotation(StringBuilder codeBuilder, Class<? extends Annotation> annotationClass) {
         String annotationClassName = getTypeName(annotationClass);
-        codeBuilder.append("@").append(annotationClassName);
+        codeBuilder.append(AT_CHAR).append(annotationClassName);
     }
 
     final void generateAnnotationAttributes(StringBuilder codeBuilder, Object... attributes) {
@@ -504,7 +626,7 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
 
     final void generateAnnotationAttribute(StringBuilder codeBuilder, String name, Object value) {
         String attributeValue = resolveAnnotationAttribute(value);
-        codeBuilder.append(name).append("=").append(attributeValue);
+        codeBuilder.append(name).append(EQUAL_CHAR).append(attributeValue);
     }
 
     private String resolveAnnotationAttribute(Object value) {
@@ -523,17 +645,17 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     private String resolveAnnotationClassAttribute(Class<?> value) {
-        return getTypeName(value) + ".class";
+        return getTypeName(value) + DOT_CHAR + "class";
     }
 
     private String resolveAnnotationStringAttribute(String value) {
-        return "\"" + value + "\"";
+        return DOUBLE_QUOTE_CHAR + value + DOUBLE_QUOTE_CHAR;
     }
 
     private String resolveAnnotationEnumAttribute(Enum value) {
         String className = getTypeName(value.getClass());
         String name = value.name();
-        return className + "." + name;
+        return className + DOT_CHAR + name;
     }
 
     private String resolveAnnotationAttribute(Annotation value) {
@@ -564,23 +686,23 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
 
     protected final void generateStartBody(StringBuilder codeBuilder) {
         generateSpace(codeBuilder);
-        codeBuilder.append(START_BODY);
+        generate(codeBuilder, LEFT_CURLY_BRACE_CHAR);
     }
 
     protected final void generateEndBody(StringBuilder codeBuilder) {
-        codeBuilder.append(END_BODY);
+        generate(codeBuilder, RIGHT_CURLY_BRACE_CHAR);
     }
 
     protected final void generateStartParameter(StringBuilder codeBuilder) {
-        codeBuilder.append(START_PARAMETER);
+        generate(codeBuilder, LEFT_PARENTHESIS_CHAR);
     }
 
     protected final void generateEndParameter(StringBuilder codeBuilder) {
-        codeBuilder.append(END_PARAMETER);
+        generate(codeBuilder, RIGHT_PARENTHESIS_CHAR);
     }
 
     protected final void generateSeparator(StringBuilder codeBuilder) {
-        codeBuilder.append(SEPARATOR);
+        generate(codeBuilder, SEMICOLON_CHAR);
     }
 
     protected final void generateNewLine(StringBuilder codeBuilder) {
@@ -588,11 +710,11 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     protected final void generateSpace(StringBuilder codeBuilder) {
-        generate(codeBuilder, SPACE);
+        generate(codeBuilder, SPACE_CHAR);
     }
 
     protected final void generateComma(StringBuilder codeBuilder) {
-        generate(codeBuilder, COMMA);
+        generate(codeBuilder, COMMA_CHAR);
     }
 
     protected final void generateType(StringBuilder codeBuilder, Type type) {
@@ -600,11 +722,15 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     protected final void generateDoubleQuote(StringBuilder coderBuilder) {
-        generate(coderBuilder, DOUBLE_QUOTE);
+        generate(coderBuilder, DOUBLE_QUOTE_CHAR);
     }
 
     protected final void generateDot(StringBuilder coderBuilder) {
-        generate(coderBuilder, DOT);
+        generate(coderBuilder, DOT_CHAR);
+    }
+
+    protected final void generate(StringBuilder codeBuilder, char c) {
+        codeBuilder.append(c);
     }
 
     protected final void generate(StringBuilder codeBuilder, String content) {
@@ -622,7 +748,7 @@ public abstract class RestControllerSourceCodeGenerator implements ControllerSou
     }
 
     protected String getTypeName(Type type) {
-        return type.getTypeName().replace('$', '.');
+        return type.getTypeName().replace(DOLLAR_CHAR, DOT_CHAR);
     }
 
     protected abstract String getPackageName(Class<?> interfaceClass, Class<?> interfaceImplClass);

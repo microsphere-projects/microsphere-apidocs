@@ -6,6 +6,7 @@ import io.microsphere.apidocs.springfox.documentation.spring.web.annotation.Http
 import java.lang.annotation.Annotation;
 import java.util.List;
 
+import static io.microsphere.constants.PathConstants.SLASH;
 import static org.springframework.core.annotation.AnnotationUtils.synthesizeAnnotation;
 
 /**

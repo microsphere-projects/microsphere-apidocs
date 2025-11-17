@@ -18,28 +18,43 @@
 package io.microsphere.apidocs.springfox.boot.autoconfigure;
 
 
-import org.apache.dubbo.config.spring.context.annotation.DubboComponentScan;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 /**
- * TODO
+ * {@link SpringfoxAutoConfiguration} Test
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
+ * @see SpringfoxAutoConfiguration
  * @since 1.0.0
  */
 @SpringBootTest(
         classes = SpringfoxAutoConfiguration.class,
+        properties = {
+                "spring.profiles.active=dubbo-provider"
+        },
         webEnvironment = RANDOM_PORT
 )
-@TestPropertySource(locations = "classpath:/META-INF/config/dubbo-provider.yaml")
 @EnableAutoConfiguration
-@DubboComponentScan("io.microsphere.apidocs.springfox.test.dubbo")
 class SpringfoxAutoConfigurationTest {
+
+//    private static FixedHostPortGenericContainer zookeeper;
+//
+//    @BeforeAll
+//    static void beforeAll() {
+//        zookeeper = (FixedHostPortGenericContainer) new FixedHostPortGenericContainer("zookeeper")
+//                .withFixedExposedPort(2181, 2181)
+//                .waitingFor(forLogMessage("Started ServerConnector", 1));
+//        zookeeper.start();
+//    }
+//
+//    @AfterAll
+//    static void afterAll() {
+//        zookeeper.stop();
+//    }
 
     @Test
     void test() {

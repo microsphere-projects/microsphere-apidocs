@@ -1,4 +1,4 @@
-package io.microsphere.apidocs.springfox.documentation.spring.web.compiler;
+package io.microsphere.apidocs.springfox.documentation.dubbo.compiler;
 
 import org.apache.dubbo.common.compiler.support.ClassUtils;
 import org.springframework.core.io.Resource;

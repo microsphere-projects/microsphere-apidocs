@@ -86,6 +86,11 @@ dependencyResolutionManagement {
                 "junit-jupiter-engine", "org.junit.jupiter", "junit-jupiter-engine"
             ).version(providers.gradleProperty("junit-jupiter-engine.version").get())
 
+            // Testcontainers
+            library(
+                "testcontainers-bom", "org.testcontainers", "testcontainers-bom"
+            ).version(providers.gradleProperty("testcontainers.version").get())
+
             // Logback
             library(
                 "logback-classic", "ch.qos.logback", "logback-classic"

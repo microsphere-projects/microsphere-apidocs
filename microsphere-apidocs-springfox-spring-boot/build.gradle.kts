@@ -11,7 +11,7 @@ dependencies {
     implementation(platform(libs.spring.boot.dependencies))
 
     // Microsphere Dependencies
-    // implementation(platform(libs.microsphere.java.dependencies))
+    // implementation(platform(libs.microsphere.spring.dependencies))
     implementation(platform(libs.microsphere.spring.boot.dependencies))
 
     // Microsphere
@@ -33,4 +33,5 @@ dependencies {
 
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("ch.qos.logback:logback-classic")
 }

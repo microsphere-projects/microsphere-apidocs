@@ -1,10 +1,9 @@
 package io.microsphere.apidocs.springfox.documentation.dubbo.beans.factory;
 
-import io.microsphere.apidocs.springfox.documentation.spring.web.compiler.JdkCompiler;
+import io.microsphere.apidocs.springfox.documentation.dubbo.compiler.JdkCompiler;
 import io.microsphere.apidocs.springfox.documentation.spring.web.generator.ControllerSourceCodeGenerator;
+import io.microsphere.logging.Logger;
 import org.apache.dubbo.config.spring.ServiceBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.BeanClassLoaderAware;
@@ -17,15 +16,15 @@ import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.ClassUtils;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.microsphere.logging.LoggerFactory.getLogger;
 import static io.microsphere.spring.beans.factory.support.BeanRegistrar.registerBeanDefinition;
+import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
+import static org.springframework.util.ClassUtils.resolveClassName;
 
 /**
  * {@link BeanDefinitionRegistryPostProcessor} for API Service Swagger Document
@@ -35,7 +34,7 @@ import static io.microsphere.spring.beans.factory.support.BeanRegistrar.register
 public class ApiServiceDocumentBeanDefinitionProcessor
         implements BeanDefinitionRegistryPostProcessor, BeanFactoryPostProcessor, BeanClassLoaderAware, InitializingBean, DisposableBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(ApiServiceDocumentBeanDefinitionProcessor.class);
+    private static final Logger logger = getLogger(ApiServiceDocumentBeanDefinitionProcessor.class);
 
     private static final String SERVICE_BEAN_CLASS_NAME = ServiceBean.class.getName();
 
@@ -67,11 +66,11 @@ public class ApiServiceDocumentBeanDefinitionProcessor
         Class<?> dubboInterfaceClass = resolveDubboInterfaceClass(propertyValues);
         String dubboProviderBeanName = resolveDubboProviderBeanName(propertyValues);
         Class<?> dubboProviderClass = resolveDubboProviderClass(dubboProviderBeanName);
-        if (AnnotationUtils.findAnnotation(dubboProviderClass, RestController.class) == null) {
-            logger.debug("Dubbo Service [interface : '{}' , provider : '{}'] is not a @RestController Bean", dubboInterfaceClass.getName(),
-                    dubboProviderClass.getName());
-            return;
-        }
+//        if (findAnnotation(dubboProviderClass, RestController.class) == null) {
+//            logger.debug("Dubbo Service [interface : '{}' , provider : '{}'] is not a @RestController Bean", dubboInterfaceClass.getName(),
+//                    dubboProviderClass.getName());
+//            return;
+//        }
         controllerSourceCodeGeneratorProvider.forEach(generator -> {
             try {
                 String sourceCode = generator.generate(dubboInterfaceClass, dubboProviderClass, dubboProviderBeanName);
@@ -98,7 +97,7 @@ public class ApiServiceDocumentBeanDefinitionProcessor
 
     private Class<?> resolveDubboInterfaceClass(MutablePropertyValues propertyValues) {
         String dubboInterfaceClassName = (String) propertyValues.get("interface");
-        return ClassUtils.resolveClassName(dubboInterfaceClassName, classLoader);
+        return resolveClassName(dubboInterfaceClassName, classLoader);
     }
 
     private String resolveDubboProviderBeanName(MutablePropertyValues propertyValues) {
@@ -110,7 +109,7 @@ public class ApiServiceDocumentBeanDefinitionProcessor
     private Class<?> resolveDubboProviderClass(String dubboProviderBeanName) {
         BeanDefinition dubboServiceBeanDefinition = registry.getBeanDefinition(dubboProviderBeanName);
         String dubboProviderBeanClassName = dubboServiceBeanDefinition.getBeanClassName();
-        return ClassUtils.resolveClassName(dubboProviderBeanClassName, classLoader);
+        return resolveClassName(dubboProviderBeanClassName, classLoader);
     }
 
     protected List<BeanDefinition> findDubboServiceBeanDefinitions() {
@@ -126,7 +125,6 @@ public class ApiServiceDocumentBeanDefinitionProcessor
     public void setBeanClassLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
         this.jdkCompiler = new JdkCompiler(classLoader);
-
     }
 
     @Override

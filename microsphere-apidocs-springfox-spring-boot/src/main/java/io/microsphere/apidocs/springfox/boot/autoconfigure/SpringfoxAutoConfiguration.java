@@ -22,13 +22,17 @@ import io.microsphere.apidocs.springfox.boot.condition.ConditionalOnSpringFoxEna
 import io.microsphere.apidocs.springfox.documentation.dubbo.annotation.DubboDocumentation;
 import io.microsphere.apidocs.springfox.documentation.dubbo.beans.factory.ApiServiceDocumentBeanDefinitionProcessor;
 import io.microsphere.apidocs.springfox.documentation.dubbo.generator.DubboRestControllerSourceCodeGenerator;
+import io.microsphere.apidocs.springfox.documentation.spring.web.annotation.HttpDocumentation;
+import io.microsphere.apidocs.springfox.documentation.spring.web.beans.factory.config.WebMvcRequestHandlerProviderBeanPostProcessor;
 import io.microsphere.apidocs.springfox.documentation.spring.web.generator.ControllerSourceCodeGenerator;
+import io.microsphere.apidocs.springfox.documentation.spring.web.generator.HttpRestControllerSourceCodeGenerator;
 import io.swagger.models.Swagger;
 import org.apache.dubbo.config.spring.context.annotation.DubboComponentScan;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
@@ -38,11 +42,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import springfox.boot.starter.autoconfigure.OpenApiAutoConfiguration;
 import springfox.documentation.builders.ApiInfoBuilder;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spring.web.plugins.ApiSelectorBuilder;
 import springfox.documentation.spring.web.plugins.Docket;
 
+import static org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET;
+import static springfox.documentation.builders.PathSelectors.any;
 import static springfox.documentation.builders.RequestHandlerSelectors.withClassAnnotation;
 import static springfox.documentation.spi.DocumentationType.SWAGGER_2;
 
@@ -60,42 +64,74 @@ import static springfox.documentation.spi.DocumentationType.SWAGGER_2;
         HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class
 })
 @Import(value = {
-        SpringfoxAutoConfiguration.SwaggerConfiguration.class
+        SpringfoxAutoConfiguration.SwaggerConfiguration.class,
+        HttpRestControllerSourceCodeGenerator.class,
+        DubboRestControllerSourceCodeGenerator.class
 })
 public class SpringfoxAutoConfiguration {
 
     @ConditionalOnClass(Swagger.class)
+    @Import(SwaggerConfiguration.DubboConfiguration.class)
     public static class SwaggerConfiguration {
 
+        @Bean
+        @ConditionalOnWebApplication(type = SERVLET)
+        @ConditionalOnClass(name = "org.springframework.web.servlet.mvc.condition.PathPatternsRequestCondition")
+        public WebMvcRequestHandlerProviderBeanPostProcessor webMvcRequestHandlerProviderBeanPostProcessor() {
+            return new WebMvcRequestHandlerProviderBeanPostProcessor();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public ApiServiceDocumentBeanDefinitionProcessor apiServiceDocumentBeanDefinitionProcessor(
+                ObjectProvider<ControllerSourceCodeGenerator> controllerSourceCodeGeneratorProvider) {
+            return new ApiServiceDocumentBeanDefinitionProcessor(controllerSourceCodeGeneratorProvider);
+        }
+
+        @Bean
+        public Docket originalRestApi() {
+            ApiSelectorBuilder asb = new Docket(SWAGGER_2)
+                    .apiInfo(new ApiInfoBuilder()
+                            .title("REST")
+                            .build())
+                    .select()
+                    .apis(withClassAnnotation(DubboDocumentation.class).negate().and(withClassAnnotation(HttpDocumentation.class).negate()))
+                    .paths(any());
+            Docket docket = asb.build();
+            docket.groupName("default");
+            return docket;
+        }
+
+
         @ConditionalOnClass(DubboComponentScan.class)
-        @Configuration(proxyBeanMethods = false)
-        @Import(value = {DubboRestControllerSourceCodeGenerator.class})
-        public static class DubboConfiguration {
+        static class DubboConfiguration {
 
             @Bean
-            @ConditionalOnMissingBean
-            public Docket createDubboRestApi() {
+            public Docket dubboRPCApi() {
                 ApiSelectorBuilder asb = new Docket(SWAGGER_2)
-                        .apiInfo(getApiInfo())
+                        .apiInfo(new ApiInfoBuilder()
+                                .title("Dubbo RPC")
+                                .build())
                         .select()
                         .apis(withClassAnnotation(DubboDocumentation.class))
-                        .paths(PathSelectors.any());
+                        .paths(any());
                 Docket docket = asb.build();
-                docket.groupName("dubbo");
+                docket.groupName("dubbo-rpc");
                 return docket;
             }
 
             @Bean
-            @ConditionalOnMissingBean
-            public ApiServiceDocumentBeanDefinitionProcessor apiServiceDocumentBeanDefinitionRegistryPostProcessor(
-                    ObjectProvider<ControllerSourceCodeGenerator> controllerSourceCodeGeneratorProvider) {
-                return new ApiServiceDocumentBeanDefinitionProcessor(controllerSourceCodeGeneratorProvider);
-            }
-
-            private ApiInfo getApiInfo() {
-                return new ApiInfoBuilder().title("Dubbo API")
-                        .version(SpringfoxAutoConfiguration.class.getPackage().getImplementationVersion())
-                        .build();
+            public Docket dubboRestApi() {
+                ApiSelectorBuilder asb = new Docket(SWAGGER_2)
+                        .apiInfo(new ApiInfoBuilder()
+                                .title("Dubbo REST")
+                                .build())
+                        .select()
+                        .apis(withClassAnnotation(HttpDocumentation.class))
+                        .paths(any());
+                Docket docket = asb.build();
+                docket.groupName("dubbo-rest");
+                return docket;
             }
         }
     }

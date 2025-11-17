@@ -17,12 +17,11 @@
 
 package io.microsphere.apidocs.springfox.documentation.dubbo.client;
 
+import io.microsphere.logging.Logger;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.apache.dubbo.config.annotation.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.EnvironmentAware;
 import org.springframework.core.env.Environment;
@@ -33,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import static io.microsphere.logging.LoggerFactory.getLogger;
 import static java.util.Collections.emptyMap;
 import static org.apache.dubbo.common.constants.CommonConstants.GROUP_KEY;
 import static org.apache.dubbo.common.constants.CommonConstants.PATH_KEY;
@@ -49,15 +49,13 @@ import static org.springframework.util.StringUtils.hasText;
  */
 public class DubboClient implements EnvironmentAware, DisposableBean {
 
-    private static final Logger logger = LoggerFactory.getLogger(DubboClient.class);
+    private static final Logger logger = getLogger(DubboClient.class);
 
     private static final String DUBBO_PORT_PROPERTY_NAME = "dubbo.protocol.port";
 
     private List<ReferenceConfig> referenceConfigs = new LinkedList<>();
 
     private Map<Class<?>, Object> proxiesCache = new HashMap<>();
-
-    private ClassLoader classLoader;
 
     private String referenceBaseURL;
 

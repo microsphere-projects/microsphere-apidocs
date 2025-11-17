@@ -1,4 +1,4 @@
-package io.microsphere.apidocs.springfox.documentation.spring.web.compiler;
+package io.microsphere.apidocs.springfox.documentation.dubbo.compiler;
 
 import io.microsphere.logging.Logger;
 

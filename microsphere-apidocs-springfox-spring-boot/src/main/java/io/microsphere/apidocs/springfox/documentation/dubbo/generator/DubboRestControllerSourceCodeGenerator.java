@@ -31,6 +31,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import static io.microsphere.constants.PathConstants.SLASH;
 import static io.microsphere.spring.beans.factory.support.BeanRegistrar.registerBeanDefinition;
 import static org.springframework.core.annotation.AnnotationUtils.synthesizeAnnotation;
 

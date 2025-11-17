@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: dubbo-test
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dubbo-provider
+
+dubbo:
+  scan:
+    base-packages: io.microsphere.apidocs.springfox.test.dubbo
+  registry:
+    address: multicast://224.5.6.7:1234
+  protocol:
+    port: 28000
