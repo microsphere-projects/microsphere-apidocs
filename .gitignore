@@ -24,6 +24,7 @@ hs_err_pid*
 
 # maven ignore
 target/
+out/
 !.mvn/wrapper/*
 
 # gradle ignore
