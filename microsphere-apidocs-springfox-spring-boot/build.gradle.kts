@@ -16,6 +16,7 @@ dependencies {
 
     // Microsphere
     "optionalApi"("io.github.microsphere-projects:microsphere-spring-boot-core:0.1.5")
+    "optionalApi"("io.github.microsphere-projects:microsphere-annotation-processor:0.1.5")
 
     // Springfox
     "optionalApi"("io.springfox:springfox-boot-starter:3.0.0")

@@ -1,6 +1,5 @@
 package io.microsphere.apidocs.springfox.documentation.dubbo.compiler;
 
-import org.apache.dubbo.common.compiler.support.ClassUtils;
 import org.springframework.core.io.Resource;
 
 import javax.lang.model.element.Modifier;
@@ -17,6 +16,7 @@ import java.nio.charset.Charset;
 
 import static javax.tools.JavaFileObject.Kind.SOURCE;
 import static org.apache.dubbo.common.compiler.support.ClassUtils.JAVA_EXTENSION;
+import static org.apache.dubbo.common.compiler.support.ClassUtils.toURI;
 
 /**
  * {@link JavaFileObject} based on Spring {@link Resource}
@@ -39,7 +39,7 @@ public class SourceJavaFileObject implements JavaFileObject {
         this.className = className;
         this.source = sourceCode;
         this.charset = charset;
-        this.uri = ClassUtils.toURI(className + JAVA_EXTENSION);
+        this.uri = toURI(className + JAVA_EXTENSION);
         this.kind = SOURCE;
     }
 

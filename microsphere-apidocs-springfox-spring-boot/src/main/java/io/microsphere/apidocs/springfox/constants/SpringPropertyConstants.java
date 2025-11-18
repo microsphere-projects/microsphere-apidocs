@@ -17,6 +17,8 @@
 
 package io.microsphere.apidocs.springfox.constants;
 
+import io.microsphere.annotation.ConfigurationProperty;
+
 /**
  * The constants for Spring Property
  *
@@ -33,5 +35,9 @@ public interface SpringPropertyConstants {
     /**
      * The property name of Microsphere Springfox 'enabled' status
      */
+    @ConfigurationProperty(
+            type = boolean.class,
+            defaultValue = "true"
+    )
     String SPRING_FOX_ENABLED_PROPERTY_NAME = PROPERTY_NAME_PREFIX + "enabled";
 }

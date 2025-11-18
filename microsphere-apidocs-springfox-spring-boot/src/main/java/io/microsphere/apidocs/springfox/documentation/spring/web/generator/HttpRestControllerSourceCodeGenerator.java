@@ -6,7 +6,7 @@ import io.microsphere.apidocs.springfox.documentation.spring.web.annotation.Http
 import java.lang.annotation.Annotation;
 import java.util.List;
 
-import static io.microsphere.constants.PathConstants.SLASH;
+import static io.microsphere.net.URLUtils.buildURI;
 import static org.springframework.core.annotation.AnnotationUtils.synthesizeAnnotation;
 
 /**
@@ -30,11 +30,7 @@ public class HttpRestControllerSourceCodeGenerator extends RestControllerSourceC
 
     @Override
     protected String resolveRequestMappingPathOnControllerClass(String path, Class<?> interfaceClass, Class<?> interfaceImplClass) {
-        if (!path.endsWith(SLASH)) {
-            path = path + SLASH;
-        }
-        String newPath = path + "api/http";
-        return newPath;
+        return buildURI(path, "api", "http");
     }
 
     @Override

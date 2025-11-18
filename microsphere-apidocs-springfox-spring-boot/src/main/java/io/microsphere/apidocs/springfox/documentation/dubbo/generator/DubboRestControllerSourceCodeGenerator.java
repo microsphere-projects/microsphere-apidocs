@@ -31,7 +31,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import static io.microsphere.constants.PathConstants.SLASH;
+import static io.microsphere.net.URLUtils.buildURI;
 import static io.microsphere.spring.beans.factory.support.BeanRegistrar.registerBeanDefinition;
 import static org.springframework.core.annotation.AnnotationUtils.synthesizeAnnotation;
 
@@ -67,11 +67,7 @@ public class DubboRestControllerSourceCodeGenerator extends RestControllerSource
 
     @Override
     protected String resolveRequestMappingPathOnControllerClass(String path, Class<?> interfaceClass, Class<?> interfaceImplClass) {
-        if (!path.endsWith(SLASH)) {
-            path = path + SLASH;
-        }
-        String newPath = path + "api/dubbo";
-        return newPath;
+        return buildURI(path, "api", "dubbo");
     }
 
     @Override

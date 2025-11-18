@@ -40,10 +40,14 @@ import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguratio
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.web.bind.annotation.RestController;
 import springfox.boot.starter.autoconfigure.OpenApiAutoConfiguration;
 import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spring.web.plugins.ApiSelectorBuilder;
 import springfox.documentation.spring.web.plugins.Docket;
+
+import java.util.function.Consumer;
 
 import static org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type.SERVLET;
 import static springfox.documentation.builders.PathSelectors.any;
@@ -64,14 +68,17 @@ import static springfox.documentation.spi.DocumentationType.SWAGGER_2;
         HttpMessageConvertersAutoConfiguration.class, RepositoryRestMvcAutoConfiguration.class
 })
 @Import(value = {
-        SpringfoxAutoConfiguration.SwaggerConfiguration.class,
-        HttpRestControllerSourceCodeGenerator.class,
-        DubboRestControllerSourceCodeGenerator.class
+        SpringfoxAutoConfiguration.SwaggerConfiguration.class
+
 })
 public class SpringfoxAutoConfiguration {
 
     @ConditionalOnClass(Swagger.class)
-    @Import(SwaggerConfiguration.DubboConfiguration.class)
+    @Import(value = {
+            SwaggerConfiguration.DubboConfiguration.class,
+            HttpRestControllerSourceCodeGenerator.class,
+            DubboRestControllerSourceCodeGenerator.class
+    })
     public static class SwaggerConfiguration {
 
         @Bean
@@ -89,19 +96,18 @@ public class SpringfoxAutoConfiguration {
         }
 
         @Bean
-        public Docket originalRestApi() {
+        public Docket springRestApi() {
             ApiSelectorBuilder asb = new Docket(SWAGGER_2)
-                    .apiInfo(new ApiInfoBuilder()
-                            .title("REST")
-                            .build())
+                    .apiInfo(apiInfo(builder -> builder.title("Spring REST")))
                     .select()
-                    .apis(withClassAnnotation(DubboDocumentation.class).negate().and(withClassAnnotation(HttpDocumentation.class).negate()))
+                    .apis(withClassAnnotation(RestController.class)
+                            .and(withClassAnnotation(DubboDocumentation.class).negate())
+                            .and(withClassAnnotation(HttpDocumentation.class).negate()))
                     .paths(any());
             Docket docket = asb.build();
             docket.groupName("default");
             return docket;
         }
-
 
         @ConditionalOnClass(DubboComponentScan.class)
         static class DubboConfiguration {
@@ -109,9 +115,7 @@ public class SpringfoxAutoConfiguration {
             @Bean
             public Docket dubboRPCApi() {
                 ApiSelectorBuilder asb = new Docket(SWAGGER_2)
-                        .apiInfo(new ApiInfoBuilder()
-                                .title("Dubbo RPC")
-                                .build())
+                        .apiInfo(apiInfo(builder -> builder.title("Dubbo RPC")))
                         .select()
                         .apis(withClassAnnotation(DubboDocumentation.class))
                         .paths(any());
@@ -121,18 +125,22 @@ public class SpringfoxAutoConfiguration {
             }
 
             @Bean
-            public Docket dubboRestApi() {
+            public Docket dubboHTTPApi() {
                 ApiSelectorBuilder asb = new Docket(SWAGGER_2)
-                        .apiInfo(new ApiInfoBuilder()
-                                .title("Dubbo REST")
-                                .build())
+                        .apiInfo(apiInfo(builder -> builder.title("Dubbo HTTP")))
                         .select()
                         .apis(withClassAnnotation(HttpDocumentation.class))
                         .paths(any());
                 Docket docket = asb.build();
-                docket.groupName("dubbo-rest");
+                docket.groupName("dubbo-http");
                 return docket;
             }
         }
+    }
+
+    static ApiInfo apiInfo(Consumer<ApiInfoBuilder> apiInfoBuilderConsumer) {
+        ApiInfoBuilder apiInfoBuilder = new ApiInfoBuilder();
+        apiInfoBuilderConsumer.accept(apiInfoBuilder);
+        return apiInfoBuilder.build();
     }
 }

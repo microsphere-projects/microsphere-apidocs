@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import static io.microsphere.logging.LoggerFactory.getLogger;
 import static io.microsphere.spring.beans.factory.support.BeanRegistrar.registerBeanDefinition;
-import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
 import static org.springframework.util.ClassUtils.resolveClassName;
 
 /**
@@ -31,8 +30,8 @@ import static org.springframework.util.ClassUtils.resolveClassName;
  *
  * @author <a href="mailto:mercyblitz@gmail.com">Mercy</a>
  */
-public class ApiServiceDocumentBeanDefinitionProcessor
-        implements BeanDefinitionRegistryPostProcessor, BeanFactoryPostProcessor, BeanClassLoaderAware, InitializingBean, DisposableBean {
+public class ApiServiceDocumentBeanDefinitionProcessor implements BeanDefinitionRegistryPostProcessor,
+        BeanFactoryPostProcessor, BeanClassLoaderAware, InitializingBean, DisposableBean {
 
     private static final Logger logger = getLogger(ApiServiceDocumentBeanDefinitionProcessor.class);
 
@@ -66,11 +65,6 @@ public class ApiServiceDocumentBeanDefinitionProcessor
         Class<?> dubboInterfaceClass = resolveDubboInterfaceClass(propertyValues);
         String dubboProviderBeanName = resolveDubboProviderBeanName(propertyValues);
         Class<?> dubboProviderClass = resolveDubboProviderClass(dubboProviderBeanName);
-//        if (findAnnotation(dubboProviderClass, RestController.class) == null) {
-//            logger.debug("Dubbo Service [interface : '{}' , provider : '{}'] is not a @RestController Bean", dubboInterfaceClass.getName(),
-//                    dubboProviderClass.getName());
-//            return;
-//        }
         controllerSourceCodeGeneratorProvider.forEach(generator -> {
             try {
                 String sourceCode = generator.generate(dubboInterfaceClass, dubboProviderClass, dubboProviderBeanName);
